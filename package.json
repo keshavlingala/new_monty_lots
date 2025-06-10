@@ -1,0 +1,30 @@
+{
+  "name": "new_monty_lots",
+  "version": "1.0.0",
+  "description": "Koop server for hosting GeoJSON data files with Leaflet frontend",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "koop",
+    "geojson",
+    "leaflet",
+    "gis"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@koopjs/koop-core": "^10.4.17",
+    "@koopjs/provider-file-geojson": "^2.2.0",
+    "koop-output-geojson": "^1.1.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
