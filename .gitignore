@@ -1,1 +1,18 @@
 node_modules/
+.env
+.env.local
+.DS_Store
+*.log
+dist/
+build/
+.cache/
+.tmp/
+.temp/
+
+# Large data files (when using object storage)
+# Uncomment these lines when switching to object storage:
+# provider-data/*.geojson
+# !provider-data/point.geojson
+# !provider-data/polygon.geojson
+# !provider-data/line.geojson
+# !provider-data/square.geojson

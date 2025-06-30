@@ -48,4 +48,9 @@ koop.server.get('/catalog', (req, res) => {
   });
 });
 
+// Health check endpoint for monitoring
+koop.server.get('/health', (req, res) => {
+  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
 koop.server.listen(process.env.PORT || 8080);
