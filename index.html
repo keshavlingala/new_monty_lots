@@ -11,6 +11,11 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Leaflet MarkerCluster plugin -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
 	<style>
 		html, body {
@@ -88,6 +93,28 @@
 			height: 100%;
 			width: 100%;
 		}
+		
+		/* Custom cluster styling */
+		.marker-cluster-small {
+			background-color: rgba(7, 123, 255, 0.6);
+		}
+		.marker-cluster-small div {
+			background-color: rgba(7, 123, 255, 0.8);
+		}
+		
+		.marker-cluster-medium {
+			background-color: rgba(255, 193, 7, 0.6);
+		}
+		.marker-cluster-medium div {
+			background-color: rgba(255, 193, 7, 0.8);
+		}
+		
+		.marker-cluster-large {
+			background-color: rgba(220, 53, 69, 0.6);
+		}
+		.marker-cluster-large div {
+			background-color: rgba(220, 53, 69, 0.8);
+		}
 	</style>
 
 	
@@ -128,17 +155,62 @@
 			.then(response => response.json())
 			.then(data => {
 				const style = getStyleForLayer(layerId);
-				L.geoJSON(data, {
-					pointToLayer: function(feature, latlng) {
-						return L.marker(latlng);
-					},
-					style: style,
-					onEachFeature: function(feature, layer) {
-						const props = feature.properties;
-						const popupContent = createPopupContent(layerId, props, feature.geometry);
-						layer.bindPopup(popupContent);
-					}
-				}).addTo(map);
+				const featureCount = data.features.length;
+				
+				// Use clustering for large datasets (>1000 features)
+				const useClustering = featureCount > 1000;
+				
+				if (useClustering) {
+					console.log(`Using clustering for ${layerId} (${featureCount} features)`);
+					
+					// Create marker cluster group
+					const clusterGroup = L.markerClusterGroup({
+						maxClusterRadius: 50,
+						disableClusteringAtZoom: 18,
+						spiderfyOnMaxZoom: true,
+						showCoverageOnHover: true,
+						zoomToBoundsOnClick: true
+					});
+					
+					// Add features to cluster group
+					L.geoJSON(data, {
+						pointToLayer: function(feature, latlng) {
+							return L.marker(latlng);
+						},
+						style: style,
+						onEachFeature: function(feature, layer) {
+							const props = feature.properties;
+							const popupContent = createPopupContent(layerId, props, feature.geometry);
+							layer.bindPopup(popupContent);
+							
+							// Add to cluster group for points, directly to map for polygons/lines
+							if (feature.geometry.type === 'Point') {
+								clusterGroup.addLayer(layer);
+							} else {
+								layer.addTo(map);
+							}
+						}
+					});
+					
+					// Add cluster group to map
+					map.addLayer(clusterGroup);
+					
+				} else {
+					console.log(`Loading ${layerId} without clustering (${featureCount} features)`);
+					
+					// Use regular loading for smaller datasets
+					L.geoJSON(data, {
+						pointToLayer: function(feature, latlng) {
+							return L.marker(latlng);
+						},
+						style: style,
+						onEachFeature: function(feature, layer) {
+							const props = feature.properties;
+							const popupContent = createPopupContent(layerId, props, feature.geometry);
+							layer.bindPopup(popupContent);
+						}
+					}).addTo(map);
+				}
 			})
 			.catch(error => console.error(`Error loading ${layerId} data:`, error));
 	}
@@ -188,14 +260,17 @@
 		// Clear loading message
 		layerList.innerHTML = '';
 		
-		// Add layer items
+		// Add layer items with clustering info
 		catalog.services.forEach(service => {
 			const listItem = document.createElement('li');
 			listItem.className = 'layer-item';
+			
 			listItem.innerHTML = `
 				<div class="layer-name">${service.name}</div>
 				<div class="layer-id">${service.id}</div>
+				<div style="font-size: 0.8em; color: #28a745; margin-top: 4px;">✓ Loaded (clustering enabled for large datasets)</div>
 			`;
+			
 			layerList.appendChild(listItem);
 		});
 	}
@@ -209,7 +284,7 @@
 			// Update sidebar with layer information
 			updateSidebar(catalog);
 			
-			// Load each service from the catalog
+			// Load each service from the catalog (clustering handles large datasets)
 			catalog.services.forEach(service => {
 				console.log(`Loading layer: ${service.name} (${service.id})`);
 				loadLayer(service.id);
