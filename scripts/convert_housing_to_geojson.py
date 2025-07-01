@@ -21,9 +21,17 @@ def load_housing_data(input_file: str) -> List[Dict[str, Any]]:
 def create_geojson_feature(housing_record: Dict[str, Any]) -> Dict[str, Any]:
     """Convert a single housing record to a GeoJSON feature."""
     # Create the geometry from lat/lon (note: lowercase field names)
+    # Handle both string and numeric coordinate types
+    lon = housing_record["longitude"]
+    lat = housing_record["latitude"]
+    if isinstance(lon, str):
+        lon = float(lon)
+    if isinstance(lat, str):
+        lat = float(lat)
+    
     geometry = {
         "type": "Point",
-        "coordinates": [float(housing_record["longitude"]), float(housing_record["latitude"])]
+        "coordinates": [lon, lat]
     }
     
     # Create properties by copying all fields except lat/lon
@@ -54,8 +62,13 @@ def convert_to_geojson(housing_data: List[Dict[str, Any]]) -> Dict[str, Any]:
             
         try:
             # Test if coordinates can be converted to float
-            float(lat)
-            float(lon)
+            if isinstance(lat, str):
+                float(lat)
+            if isinstance(lon, str):
+                float(lon)
+            # Also check for numeric zeros
+            if lat == 0 or lon == 0:
+                continue
         except (ValueError, TypeError):
             continue
             
